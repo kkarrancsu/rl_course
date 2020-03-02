@@ -10,7 +10,7 @@ __version__ = '0.0.1'
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 setuptools.setup(
-    name='rochambeau',
+    name='sorty',
     version=__version__,
 
     description='RL Course Environments & Agent',
@@ -24,7 +24,7 @@ setuptools.setup(
     license='Apache License 2.0',
 
     python_requires='>=3',
-    packages=['rochambeau'],
+    packages=['sorty'],
 
     install_requires=[
         'gym',
