@@ -42,6 +42,8 @@ class Sorty(gym.Env):
         # The state function handle
         self.F_state = state_type
 
+        # TODO: Make this a Tuple(Discrete(),Discrete()) environment rather than
+        #  a direct Discrete environment.  The interface will be easier to understand.
         # The action space is encoded as follows:
         #  For an array of size n, we have (n-1)+(n-2)+...+1 possible actions (swaps). This sum converges to the
         #  following closed form formula: (n-1)/2*(1+n-1) = n*(n-1)/2
@@ -84,12 +86,23 @@ class Sorty(gym.Env):
         self.random_state = np.random.RandomState(SEED)
         self.observation_space = np.concatenate((self.random_state.randint(Sorty.LO, Sorty.HI, self.n),
                                                  np.zeros(self.n))).astype(int)
+        # num_states = len(self.observation)
+        # self.observation_space = spaces.Discrete(num_states)
         self.max_val_to_sort = np.max(self.observation_space)
         # update the state-space
         self.F_state(self.observation_space, self.max_val_to_sort)
 
     def step(self, action):
-        ii, jj = self.action_mapping[action]
+        # this is really weird, but we need to do this b/c numpy is returning a 0D array.  I don't know why
+        # it's doing that.  Is it b/c of the way the action_space was setup?  That seems OK to me ...
+        # >> print(type(action)) --> numpy.ndarrya
+        # >> print(action.ndim)  --> 0
+        # >> print(action.size)  --> 1
+        # To extract the actual action, I googled around and came across this solution from this
+        # SO link: https://stackoverflow.com/a/35617558/1057098
+        aa = action[()]
+
+        ii, jj = self.action_mapping[aa]
         # update the underlying array
         tmp_val = self.observation_space[ii]
         self.observation_space[ii] = self.observation_space[jj]
@@ -99,7 +112,7 @@ class Sorty(gym.Env):
         self.F_state(self.observation_space, self.max_val_to_sort)
 
         # check if we're done & issue reward accordingly
-        if np.sum(self.observation_space[self.n, :]) == self.n:
+        if np.sum(self.observation_space[self.n:]) == self.n:
             done = True
             # if we're sorted, give it a nice bar of gold
             reward = 100
@@ -108,7 +121,7 @@ class Sorty(gym.Env):
             # encourage it to sort as fast as possible
             reward = -1
 
-        info_dict = {}
+        info_dict = dict()
         return self.observation_space, reward, done, info_dict
 
     def reset(self):
