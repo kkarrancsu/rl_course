@@ -84,13 +84,23 @@ class Sorty(gym.Env):
         # in this case, the sort.  Since we will experiment with different state space functions, refer to the
         # function documentation to understand what the state space is referring to here.
         self.random_state = np.random.RandomState(SEED)
-        self.observation_space = np.concatenate((self.random_state.randint(Sorty.LO, Sorty.HI, self.n),
+        self.state = np.concatenate((self.random_state.randint(Sorty.LO, Sorty.HI, self.n),
                                                  np.zeros(self.n))).astype(int)
+
+        # observation_space is a reserved attribute (property) for gym objects, and should be a gym.Spaces object
+        self._observation_space = spaces.Tuple((spaces.Discrete(self.n), spaces.Discrete(self.n)))
+
         # num_states = len(self.observation)
-        # self.observation_space = spaces.Discrete(num_states)
-        self.max_val_to_sort = np.max(self.observation_space)
+        # self.state = spaces.Discrete(num_states)
+        self.max_val_to_sort = np.max(self.state)
         # update the state-space
-        self.F_state(self.observation_space, self.max_val_to_sort)
+        self.F_state(self.state, self.max_val_to_sort)
+
+    # I'm not super familiar with python properties, but I think this is how this is supposed to be done... so I'm
+    # trying it.
+    @property
+    def observation_space(self):
+        return self._observation_space
 
     def step(self, action):
         # this is really weird, but we need to do this b/c numpy is returning a 0D array.  I don't know why
@@ -101,18 +111,19 @@ class Sorty(gym.Env):
         # To extract the actual action, I googled around and came across this solution from this
         # SO link: https://stackoverflow.com/a/35617558/1057098
         aa = action[()]
+        # Chace: right this should not be necessary, what code is returning this?
 
         ii, jj = self.action_mapping[aa]
         # update the underlying array
-        tmp_val = self.observation_space[ii]
-        self.observation_space[ii] = self.observation_space[jj]
-        self.observation_space[jj] = tmp_val
+        tmp_val = self.state[ii]
+        self.state[ii] = self.state[jj]
+        self.state[jj] = tmp_val
 
         # compute the new state of the task
-        self.F_state(self.observation_space, self.max_val_to_sort)
+        self.F_state(self.state, self.max_val_to_sort)
 
         # check if we're done & issue reward accordingly
-        if np.sum(self.observation_space[self.n:]) == self.n:
+        if np.sum(self.state[self.n:]) == self.n:
             done = True
             # if we're sorted, give it a nice bar of gold
             reward = 100
@@ -122,16 +133,19 @@ class Sorty(gym.Env):
             reward = -1
 
         info_dict = dict()
-        return self.observation_space, reward, done, info_dict
+        # because we set the obs space to a tuple, I think we have to return a tuple of obs...
+        return (self.state[:self.n-1], self.state[self.n:]), reward, done, info_dict
 
     def reset(self):
         # TODO: this code is a direct copy of what is in the constructor .. remedy that
-        self.observation_space = np.concatenate((self.random_state.randint(Sorty.LO, Sorty.HI, self.n),
+        #   Chace: This technically does not need to be set in __init__ as reset is supposed to be called before
+        #   anything else anyway...
+        self.state = np.concatenate((self.random_state.randint(Sorty.LO, Sorty.HI, self.n),
                                                  np.zeros(self.n))).astype(int)
-        self.max_val_to_sort = np.max(self.observation_space)
+        self.max_val_to_sort = np.max(self.state)
         # update the state-space
-        self.F_state(self.observation_space, self.max_val_to_sort)
-        return self.observation_space
+        self.F_state(self.state, self.max_val_to_sort)
+        return self.state[:self.n-1], self.state[self.n:]
 
     def render(self, mode='human'):
         pass

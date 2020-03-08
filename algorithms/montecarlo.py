@@ -18,8 +18,10 @@ def int2nparr(int_val):
 
 def init_pi(n_states, n_actions):
     """
-    enumerate through every possible state and initialize a possible actiion for that state
+    enumerate through every possible state and initialize a possible action for that state
     :return:
+    Todo: Since pi will be indexed by the states and actions, don't we need more information than just the number of
+    states and actions?
     """
     pass
 
