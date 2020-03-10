@@ -16,15 +16,19 @@ def int2nparr(int_val):
     return np.array(int_val)
 
 
-def init_pi(n_states, n_actions):
+def init_pi(obs_space, action_space):
     """
     enumerate through every possible state and initialize a possible action for that state
     :return:
     Todo: Since pi will be indexed by the states and actions, don't we need more information than just the number of
     states and actions?
     """
+    obs_hi = obs_space.high[0]  # Note: expecting type gym.spaces.Box
+    obs_low = obs_space.low[0]
+    n = obs_space.shape[0]  # Note: expecting a 1d shape
+    act_n = action_space.n  # Note: expecting type gym.spaces.Discrete
+    # get all 2**n possible obs and n*(n-1)/2 actions and make a dict with them as keys?
     pass
-
 
 
 def exploring_starts(env: gym.Env, num_episodes: int = 1000, SEED: int = 0):
