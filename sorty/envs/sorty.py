@@ -85,7 +85,7 @@ class Sorty(gym.Env):
         #    action=8 --> swap[2,4]
         #    action=9 --> swap[3,4]
         num_actions = int(n * (n - 1) / 2)
-        self._action_space = spaces.Discrete(num_actions)  # todo: this action space may be too large...
+        self._action_space = spaces.Discrete(num_actions)  # todo: this action space may be too large... @Chace: why?
         # build a dictionary which maps each action to the indices which need to be swapped
         self.action_mapping = dict()
         from_ii = 0
@@ -125,7 +125,7 @@ class Sorty(gym.Env):
         return self._action_space
 
     def _set_state(self):
-        state = self.random_state.randint(Sorty.LO, Sorty.HI, self.n)  # todo: sample without replacement?
+        state = self.random_state.choice(np.arange(Sorty.LO, Sorty.HI), self.n)  # sample without replacement
         final_state = np.sort(state)  # for double checking
         return state, final_state
 
@@ -147,7 +147,7 @@ class Sorty(gym.Env):
                 # Chace: right this should not be necessary, what code is returning this?
 
         ii, jj = self.action_mapping[aa]
-        # update the underlying array
+        # update the underlying array based on the action taken
         tmp_val = self.state[ii]
         self.state[ii] = self.state[jj]
         self.state[jj] = tmp_val
@@ -156,9 +156,7 @@ class Sorty(gym.Env):
         obs = self.F_state(self.state)
 
         # check if we're done & issue reward accordingly
-        if np.sum(self.state[self.n:]) == self.n:
-            if (self.state != self.final_state).all():
-                raise RuntimeError("Sort condition didn't work! Done, but not sorted")
+        if np.array_equal(self.state, self.final_state):
             done = True
             # if we're sorted, give it a nice bar of gold
             reward = 100
