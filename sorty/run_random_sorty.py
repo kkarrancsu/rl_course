@@ -19,7 +19,7 @@ def random_sorty_perf(iters=100, max_iters=100):
     # env = Sorty(n=n)
     counts = []
     for i in range(iters):
-        env = gym.make('sorty-v0', n=6)
+        env = gym.make('sorty-v0', n=5)
         obs = env.reset()
         done = False
         count = 0
@@ -30,7 +30,6 @@ def random_sorty_perf(iters=100, max_iters=100):
             count += 1
             if done:
                 counts.append(count)
-        counts.append(count)
     print("Average out of {}: {}".format(iters, np.mean(counts)))
 
 
