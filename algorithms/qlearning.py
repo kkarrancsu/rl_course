@@ -5,6 +5,30 @@ from tqdm import tqdm
 import itertools
 
 
+def eps_greedy_choose(rso, eps, n_actions, Q, obs_base10):
+    """
+    TODO
+    :param rso:
+    :param eps:
+    :param n_actions:
+    :param Q:
+    :param obs_base10:
+    :return:
+    """
+    if rso.uniform() < eps:
+        # choose random action
+        aa = rso.randint(n_actions)
+    else:
+        # choose best action according to Q
+        aa = np.argmax(Q[obs_base10, :])
+
+        # if Q values for a state are equal, choose randomly from the best
+        if len(np.where(Q[obs_base10, :] == aa)[0]) > 1:
+            aa = rso.choice(np.where(Q[obs_base10, :] == aa)[0])
+
+    return aa
+
+
 def qlearning(env: gym.Env, num_episodes: int = 1000, max_episode_len=100,
               discount_factor: float = 0.9, eps: float = 0.1, SEED: int = 0):
     # get size of observation-space & action space
@@ -23,16 +47,17 @@ def qlearning(env: gym.Env, num_episodes: int = 1000, max_episode_len=100,
         t = 0
         done = False
         while not done and t < max_episode_len:
-            if rso.uniform() < eps:
-                # choose random action
-                aa = rso.randint(n_actions)
-            else:
-                # choose best action according to Q
-                aa = np.argmax(Q[obs_base10, :])
-
-                # if Q values for a state are equal, choose randomly from the best
-                if len(np.where(Q[obs_base10, :] == aa)[0]) > 1:
-                    aa = rso.choice(np.where(Q[obs_base10, :] == aa)[0])
+            # if rso.uniform() < eps:
+            #     # choose random action
+            #     aa = rso.randint(n_actions)
+            # else:
+            #     # choose best action according to Q
+            #     aa = np.argmax(Q[obs_base10, :])
+            #
+            #     # if Q values for a state are equal, choose randomly from the best
+            #     if len(np.where(Q[obs_base10, :] == aa)[0]) > 1:
+            #         aa = rso.choice(np.where(Q[obs_base10, :] == aa)[0])
+            aa = eps_greedy_choose(rso, eps, n_actions, Q, obs_base10)
 
             # step in the environment to get next state
             obs, reward, done, _ = env.step(aa)
@@ -60,32 +85,24 @@ def sarsa(env: gym.Env, num_episodes: int = 1000, max_episode_len=100,
         # reset the environment
         obs = env.reset()
         obs_base10 = int("".join(str(x) for x in obs), 2)
+        aa = eps_greedy_choose(rso, eps, n_actions, Q, obs_base10)
 
         t = 0
         done = False
         while not done and t < max_episode_len:
-            aa = rso.randint(n_actions) if rso.uniform() < eps else np.argmax(Q[obs_base10, :])
-
-            # if Q values for a state are equal, choose randomly from the best
-            if len(np.where(Q[obs_base10, :] == aa)[0]) > 1:
-                aa = rso.choice(np.where(Q[obs_base10, :] == aa)[0])
-
             # step in the environment to get next state
             obs_tp1, reward_tp1, done, _ = env.step(aa)
             obs_tp1_base10 = int("".join(str(x) for x in obs), 2)
 
             # choose best action according to Q
-            aa_tp1 = rso.randint(n_actions) if rso.uniform() < eps else np.argmax(Q[obs_tp1_base10, :])
-
-            # if Q values for a state are equal, choose randomly from the best
-            if len(np.where(Q[obs_tp1_base10, :] == aa_tp1)[0]) > 1:
-                aa_tp1 = rso.choice(np.where(Q[obs_tp1_base10, :] == aa_tp1)[0])
+            aa_tp1 = eps_greedy_choose(rso, eps, n_actions, Q, obs_tp1_base10)
 
             # update table entry for Q(s,a)
             Q[obs_base10, aa] = Q[obs_base10, aa] + \
                                 alpha * (reward_tp1 + discount_factor * (Q[obs_tp1_base10, aa_tp1] - Q[obs_base10, aa]))
 
             obs_base10 = obs_tp1_base10
+            aa = aa_tp1
             t += 1
 
     return Q
