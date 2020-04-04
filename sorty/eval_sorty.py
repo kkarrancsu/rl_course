@@ -123,7 +123,7 @@ def iterate_mc(num_episodes, discount_factor, eps):
     c = mces_sorty_perf(arr_len=N, iters=NUM_EVAL_ITERS, max_iters=MAX_ITERS_PER_EVAL,
                         num_episodes=int(num_episodes), discount_factor=discount_factor, eps=eps)
     d = dict(num_episodes=num_episodes,
-             alpha=alpha,
+             discount_factor=discount_factor,
              eps=eps,
              n_success=len(c),
              mean_swaps=mu(c),
