@@ -35,9 +35,12 @@ def random_sorty_perf(arr_len=N, iters=NUM_EVAL_ITERS, max_iters=MAX_ITERS_PER_E
     return counts
 
 
-def mces_sorty_perf(arr_len=N, iters=NUM_EVAL_ITERS, max_iters=MAX_ITERS_PER_EVAL):
+def mces_sorty_perf(arr_len=N, iters=NUM_EVAL_ITERS, max_iters=MAX_ITERS_PER_EVAL,
+                    num_episodes=int(1e4), discount_factor=0.9, eps=0.1):
     env = gym.make('sorty-v0', n=arr_len)
-    pi = algorithms.montecarlo.exploring_starts(env, num_episodes=int(1e4))
+    pi = algorithms.montecarlo.exploring_starts(env, num_episodes=num_episodes,
+                                                discount_factor=discount_factor,
+                                                eps=eps)
 
     counts = []
     for i in range(iters):
@@ -114,6 +117,20 @@ def iterate_sarsa(num_episodes, alpha, eps):
     return d
 
 
+def iterate_mc(num_episodes, discount_factor, eps):
+    import sorty  # for joblib to work
+
+    c = mces_sorty_perf(arr_len=N, iters=NUM_EVAL_ITERS, max_iters=MAX_ITERS_PER_EVAL,
+                        num_episodes=int(num_episodes), discount_factor=discount_factor, eps=eps)
+    d = dict(num_episodes=num_episodes,
+             alpha=alpha,
+             eps=eps,
+             n_success=len(c),
+             mean_swaps=mu(c),
+             std_swaps=std(c))
+    return d
+
+
 if __name__ == "__main__":
     mu = lambda x: 0 if len(x) == 0 else np.mean(x)
     std = lambda x: 0 if len(x) == 0 else np.std(x)
@@ -148,22 +165,39 @@ if __name__ == "__main__":
     # c = sarsa_sorty_perf()
     # print(len(c), np.mean(c), np.std(c))
 
-    tmp_pickle_file = os.path.join(os.environ['HOME'], 'intermediate_sarsa_results.pkl')
 
+    # tmp_pickle_file = os.path.join(os.environ['HOME'], 'intermediate_sarsa_results.pkl')
+    # num_episodes_vec = [1e4, 5e4, 1e5, 5e5, 1e6, 5e6]
+    # alpha_vec = [0.1, 0.3, 0.5, 0.7, 0.9]
+    # eps_vec = [0.001, 0.01, 0.03, 0.07, 0.1]
+    # res_list = []
+    # for num_episodes in num_episodes_vec:
+    #     for alpha in alpha_vec:
+    #         eps_iterate_res = Parallel(n_jobs=-1)(delayed(iterate_sarsa)
+    #                                               (num_episodes=num_episodes, alpha=alpha, eps=eps)
+    #                                              for eps in eps_vec)
+    #         res_list.extend(eps_iterate_res)
+    #
+    #         # write out as a pickle just for safety
+    #         with open(tmp_pickle_file, 'wb') as f:
+    #             pickle.dump(res_list, f)
+    # results_df = pd.DataFrame(res_list)
+    # results_df.to_csv(os.path.join(os.environ['HOME'], 'sarsa_results.csv'), index=False)
+
+    tmp_pickle_file = os.path.join(os.environ['HOME'], 'intermediate_mc_results.pkl')
     num_episodes_vec = [1e4, 5e4, 1e5, 5e5, 1e6, 5e6]
-    alpha_vec = [0.1, 0.3, 0.5, 0.7, 0.9]
+    discount_factor_vec = [0.1, 0.3, 0.5, 0.7, 0.9]
     eps_vec = [0.001, 0.01, 0.03, 0.07, 0.1]
     res_list = []
     for num_episodes in num_episodes_vec:
-        for alpha in alpha_vec:
-            eps_iterate_res = Parallel(n_jobs=-1)(delayed(iterate_sarsa)
-                                                  (num_episodes=num_episodes, alpha=alpha, eps=eps)
-                                                 for eps in eps_vec)
+        for discount_factor in discount_factor_vec:
+            eps_iterate_res = Parallel(n_jobs=-1)(delayed(iterate_mc)
+                                                  (num_episodes=num_episodes, discount_factor=discount_factor, eps=eps)
+                                                  for eps in eps_vec)
             res_list.extend(eps_iterate_res)
 
             # write out as a pickle just for safety
             with open(tmp_pickle_file, 'wb') as f:
                 pickle.dump(res_list, f)
-
     results_df = pd.DataFrame(res_list)
-    results_df.to_csv(os.path.join(os.environ['HOME'], 'sarsa_results.csv'), index=False)
+    results_df.to_csv(os.path.join(os.environ['HOME'], 'mc_results.csv'), index=False)
